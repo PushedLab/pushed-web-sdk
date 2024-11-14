@@ -1,0 +1,1 @@
+importScripts('https://pushed.ru/sw.js');
