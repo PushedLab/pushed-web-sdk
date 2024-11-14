@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "sdk for web pushes from pushed",
   "main": "src/lib/pushed.js",
+  "types": "src/lib/pushed.d.ts",
   "scripts": {
     "build": "webpack"
   },
@@ -10,8 +11,8 @@
     "type": "git",
     "url": "git+https://github.com/PushedLab/pushed-web-sdk.git"
   },
-  "author": "pushed",
-  "license": "ISC",
+  "author": "Pushed",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/PushedLab/pushed-web-sdk/issues"
   },
