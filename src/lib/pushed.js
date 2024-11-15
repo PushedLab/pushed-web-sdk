@@ -109,12 +109,9 @@ var Pushed = {
         if (navigator.serviceWorker) {
             await navigator.serviceWorker.ready;
         }
-        else if (self.registration) {
-            while (!self.registration.active) {
-                
-            }
 
-            navigator.serviceWorker = self.registration.active;
+        if (!navigator.serviceWorker){
+            throw new Error('Service Worker not found');
         }
 
         navigator.serviceWorker.addEventListener('message', function (event) {
