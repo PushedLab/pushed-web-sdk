@@ -8,7 +8,7 @@ var Pushed = {
         return new Promise(async (resolve, reject) => {
             if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
                 if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Aedd to Home Screen" before you can sign up for push notifications.'));
+                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.'));
                 }
                 else {
                     return reject(new Error('Web push is not supported'));
@@ -59,7 +59,7 @@ var Pushed = {
                         return resolve(existToken);
                     }
                     catch (e) {
-                        console.log(e);
+                        
                     }
                 }
             }
