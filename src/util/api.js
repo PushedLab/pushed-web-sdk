@@ -1,6 +1,5 @@
 import 'whatwg-fetch';
 import config from '../config';
-import { localStorage } from '../util/storage';
 
 export default {
     async post(path, json) {
@@ -33,13 +32,14 @@ export default {
     },
 
     getApiHost() {
-        let proxyEndpoint = localStorage.getItem(config.localStorageKeys.proxyApiEndpoint);
+        const localStorage = self.localStorage;
+        const proxyEndpoint = localStorage.getItem(config.localStorageKeys.proxyApiEndpoint);
 
         if (proxyEndpoint) {
             return 'https://' + proxyEndpoint;
         }
 
-        let apiEndpoint = localStorage.getItem(config.localStorageKeys.apiEndpoint);
+        const apiEndpoint = localStorage.getItem(config.localStorageKeys.apiEndpoint);
 
         return apiEndpoint || config.api.endpoint;
     }

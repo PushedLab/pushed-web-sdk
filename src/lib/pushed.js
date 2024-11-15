@@ -39,7 +39,7 @@ var Pushed = {
             }
             else if (self.registration) {
                 while (!registration.active) {
-                    //await new Promise(resolve => setTimeout(resolve, 100));
+                    
                 }
             }
 
@@ -116,7 +116,7 @@ var Pushed = {
         }
         else if (self.registration) {
             while (!self.registration.active) {
-                //await new Promise(resolve => setTimeout(resolve, 100));
+                
             }
 
             navigator.serviceWorker = self.registration.active;
@@ -198,22 +198,6 @@ var Pushed = {
         }
     },
 }
-
-setTimeout(() => {
-    const token = localStorage.getItem(config.localStorageKeys.token);
-
-    if (!token) {
-        return;
-    }
-
-    if (Pushed.attemptedValidation) {
-        return;
-    }
-
-    Pushed.validateClientToken().catch((err) => {
-        console.error('Device validation failed', err);
-    });
-}, config.logic.deviceValidationDelay);
 
 export default Pushed;
 
