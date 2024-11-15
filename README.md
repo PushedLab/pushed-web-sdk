@@ -7,7 +7,7 @@ To learn more about Web Pushed Messaging, please visit the [Pushed website](http
 ## Getting Started
 
 ```shell
-npm install pushy-sdk-web --save
+npm install pushed-web-sdk --save
 ```
 
 ```js
