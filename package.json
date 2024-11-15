@@ -11,7 +11,7 @@
     "type": "git",
     "url": "git+https://github.com/PushedLab/pushed-web-sdk.git"
   },
-  "author": "Pushed",
+  "author": "PushedLab",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/PushedLab/pushed-web-sdk/issues"
