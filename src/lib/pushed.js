@@ -8,7 +8,7 @@ var Pushed = {
         return new Promise(async (resolve, reject) => {
             if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
                 if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Aedd to Home Scren" before you can sign up for push notifications.'));
+                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Aedd to Home Screen" before you can sign up for push notifications.'));
                 }
                 else {
                     return reject(new Error('Web push is not supported'));
@@ -37,11 +37,6 @@ var Pushed = {
             if (navigator.serviceWorker) {
                 await navigator.serviceWorker.ready;
             }
-            else if (self.registration) {
-                while (!registration.active) {
-                    
-                }
-            }
 
             let subscription = await registration.pushManager.getSubscription();
 
@@ -69,11 +64,11 @@ var Pushed = {
                 }
             }
 
-            subscription = JSON.parse(JSON.stringify(subscription));
+            const jsonSubscription = JSON.parse(JSON.stringify(subscription));
 
-            const auth = subscription.keys.auth;
-            const p256dhKey = subscription.keys.p256dh;
-            const webApiEndpoint = subscription.endpoint;
+            const auth = jsonSubscription.keys.auth;
+            const p256dhKey = jsonSubscription.keys.p256dh;
+            const webApiEndpoint = jsonSubscription.endpoint;
 
             if (!p256dhKey || !auth || !webApiEndpoint) {
                 return reject(new Error('The push subscription is missing a required field.'));
@@ -90,7 +85,7 @@ var Pushed = {
             let response;
 
             try {
-                response = await api.post('/v2/web-push/register', postData);
+                response = await api.post(config.api.registerEndpoint, postData);
             }
             catch (e) {
                 return reject(new Error(`The API request failed: ${e.message}`, e));
@@ -157,17 +152,13 @@ var Pushed = {
             let response;
 
             try {
-                response = await api.post('/v2/web-push/auth-client', postData);
+                response = await api.post(config.api.authEndpoint, postData);
             }
             catch (e) {
                 return reject(new Error(`The API request failed: ${e.message}`, e));
             }
 
-            if (!response.success) {
-                return reject(new Error('An unexpected response was received from the Pushed API.'));
-            }
-
-            if (!response.model.clientToken || response.model.clientToken != clientToken) {
+            if (!response.success || !response.model.clientToken || response.model.clientToken != clientToken) {
                 return reject(new Error('An unexpected response was received from the Pushed API.'));
             }
 
@@ -176,11 +167,7 @@ var Pushed = {
     },
 
     setApiEndpoint(endpoint) {
-        if (!endpoint){
-            return;
-        }
-
-        if (typeof endpoint !== 'string') { 
+        if (!endpoint || typeof endpoint !== 'string'){
             return;
         }
 
@@ -201,4 +188,9 @@ var Pushed = {
 
 export default Pushed;
 
-module.exports = Pushed;
+try {
+    module.exports = Pushy;
+}
+catch (err) {
+    //ignore
+}

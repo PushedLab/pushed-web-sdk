@@ -36,11 +36,7 @@ self.addEventListener('push', function (event) {
 
         headers.set('Authorization', 'Basic ' + base64BasicHeader);
 
-        fetch(data.ConfirmApiUrl + "/v2/web-push/confirm", { method: 'POST', headers: headers })
-            .then(response => response.json())
-            .then(async json => {
-                console.log(json)
-            });
+        fetch(data.ConfirmApiUrl + "/v2/web-push/confirm", { method: 'POST', headers: headers });
     }
 });
 

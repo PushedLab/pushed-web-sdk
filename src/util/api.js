@@ -3,7 +3,12 @@ import config from '../config';
 
 export default {
     async post(path, json) {
-        let options = {};
+
+        if ( json === null || undefined){
+            return;
+        }
+
+        const options = {};
 
         options.method = 'POST';
         options.body = JSON.stringify(json);
