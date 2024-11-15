@@ -201,9 +201,4 @@ var Pushed = {
 
 export default Pushed;
 
-try {
-    module.exports = Pushed;
-}
-catch (err) {
-    //ignore
-}
+module.exports = Pushed;
