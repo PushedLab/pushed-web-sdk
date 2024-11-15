@@ -2,42 +2,36 @@ import api from '../util/api';
 import config from '../config'; 
 import Base64 from '../util/base64';
 import Promise from 'promise-polyfill';
-import { localStorage } from '../util/storage';
 
 var Pushed = {
-    register(options) {
+    registerWebPushes() {
         return new Promise(async (resolve, reject) => {
-            if (!options || typeof options !== 'object') {
-                options = {};
-            }
-
             if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
                 if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.'));
+                    return reject(new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Aedd to Home Scren" before you can sign up for push notifications.'));
                 }
                 else {
-                    return reject(new Error('Web push is not supported by this browser.'));
+                    return reject(new Error('Web push is not supported'));
                 }
             }
 
-            if (!localStorage.isSupported()) {
-                return reject(new Error('Local storage is not supported by this browser.'));
-            }
+            const localStorage = self.localStorage;
 
-            const serviceWorkerFile = options.serviceWorkerFile || config.serviceWorker.fileName;
-            const serviceWorkerOptions = { scope: options.serviceWorkerScope || '/' };
+            if (!localStorage) {
+                return reject(new Error('Local storage is not supported'));
+            }
 
             let registration;
             
             try {
                 if (navigator.serviceWorker) {
-                    registration = await navigator.serviceWorker.register(`/${serviceWorkerFile}`, serviceWorkerOptions);
+                    registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
                 } else if (self.registration) {
                     registration = self.registration;
                 }
             }
             catch (e) {
-                return reject(new Error(`Failed to load '${self.location.origin}/${serviceWorkerFile}': ${e.message}`, e));
+                return reject(new Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e));
             }
 
             if (navigator.serviceWorker) {
@@ -45,7 +39,7 @@ var Pushed = {
             }
             else if (self.registration) {
                 while (!registration.active) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
+                    //await new Promise(resolve => setTimeout(resolve, 100));
                 }
             }
 
@@ -58,10 +52,6 @@ var Pushed = {
                     subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(publicKey) });
                 }
                 catch (e) {
-                    if (navigator.brave && e.message.indexOf('push service error') !== -1) {
-                        return reject(new Error('Please enable "Use Google Services for Push Messaging" in Brave settings to use this feature', e));
-                    }
-
                     return reject(new Error(`Failed to subscribe the device: ${e.message}`, e));
                 }
             }
@@ -70,11 +60,11 @@ var Pushed = {
 
                 if (existToken) {
                     try {
-                        await this.validateDeviceCredentials(existToken);
+                        await this.validateClientToken(existToken);
                         return resolve(existToken);
                     }
                     catch (e) {
-                        //ignore
+                        console.log(e);
                     }
                 }
             }
@@ -112,8 +102,6 @@ var Pushed = {
 
             localStorage.setItem(config.localStorageKeys.token, response.model.clientToken);
 
-            await localStorage.recacheWebExtensionStorage(); //ЧТО ЭТО?
-
             resolve(response.model.clientToken);
         });
     },
@@ -128,7 +116,7 @@ var Pushed = {
         }
         else if (self.registration) {
             while (!self.registration.active) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+                //await new Promise(resolve => setTimeout(resolve, 100));
             }
 
             navigator.serviceWorker = self.registration.active;
@@ -145,11 +133,13 @@ var Pushed = {
         });
     },
 
-    validateDeviceCredentials() {
+    validateClientToken() {
         return new Promise(async (resolve, reject) => {
             this.attemptedValidation = true;
 
-            if (!localStorage.isSupported()) {
+            const localStorage = self.localStorage;
+
+            if (!localStorage) {
                 return reject(new Error('Local storage is not supported by this browser.'));
             }
 
@@ -194,6 +184,12 @@ var Pushed = {
             return;
         }
 
+        const localStorage = self.localStorage;
+
+        if (!localStorage) {
+            return reject(new Error('Local storage is not supported by this browser.'));
+        }
+
         const previousEndpoint = localStorage.getItem(config.localStorageKeys.apiEndpoint);
 
         if (endpoint != previousEndpoint) {
@@ -214,7 +210,7 @@ setTimeout(() => {
         return;
     }
 
-    Pushed.validateDeviceCredentials().catch((err) => {
+    Pushed.validateClientToken().catch((err) => {
         console.error('Device validation failed', err);
     });
 }, config.logic.deviceValidationDelay);
