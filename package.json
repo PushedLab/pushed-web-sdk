@@ -1,0 +1,28 @@
+{
+  "name": "pushed-web-sdk",
+  "version": "1.0.0",
+  "description": "sdk for web pushes from pushed",
+  "main": "src/lib/pushed.js",
+  "types": "src/lib/pushed.d.ts",
+  "scripts": {
+    "build": "webpack"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PushedLab/pushed-web-sdk.git"
+  },
+  "author": "PushedLab",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PushedLab/pushed-web-sdk/issues"
+  },
+  "homepage": "https://github.com/PushedLab/pushed-web-sdk#readme",
+  "devDependencies": {
+    "webpack": "^5.96.1",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "promise-polyfill": "^8.3.0",
+    "whatwg-fetch": "^3.6.20"
+  }
+}

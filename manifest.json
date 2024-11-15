@@ -1,0 +1,9 @@
+{
+    "name": "Pushed Web SDK",
+    "short_name": "Pushed",
+    "theme_color": "#ff5754",
+    "background_color": "#ffffff",
+    "display": "standalone",
+    "scope": "/",
+    "start_url": "http://localhost:8000/"
+}
