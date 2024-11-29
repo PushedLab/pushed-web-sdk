@@ -9,7 +9,3 @@ To learn more about Web Pushed Messaging, please visit the [Pushed website](http
 ```shell
 npm install pushed-web-sdk
 ```
-
-```js
-<script src="https://pushed.ru/pushed-web-sdk.js"></script>
-```
