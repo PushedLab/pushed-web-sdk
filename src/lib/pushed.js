@@ -51,53 +51,18 @@ var Pushed = {
                 }
             }
             else {
-                const existToken = localStorage.getItem(config.localStorageKeys.token);
-
-                if (existToken) {
-                    try {
-                        await this.validateClientToken(existToken);
-                        return resolve(existToken);
-                    }
-                    catch (e) {
-                        
-                    }
+                try {
+                    await this.validateClientToken();
+                    const clientToken = localStorage.getItem(config.localStorageKeys.token);
+                    return resolve(clientToken);
+                }
+                catch (e) {
+                    // ignore
                 }
             }
 
-            const jsonSubscription = JSON.parse(JSON.stringify(subscription));
-
-            const auth = jsonSubscription.keys.auth;
-            const p256dhKey = jsonSubscription.keys.p256dh;
-            const webApiEndpoint = jsonSubscription.endpoint;
-
-            if (!p256dhKey || !auth || !webApiEndpoint) {
-                return reject(new Error('The push subscription is missing a required field.'));
-            }
-
-            const postData = {
-                sdkVersion: config.version,
-                auth: auth,
-                webApiEndpoint: webApiEndpoint,
-                P256dhKey: p256dhKey,
-                hostname: self.location.hostname
-            };
-
-            let response;
-
-            try {
-                response = await api.post(config.api.registerEndpoint, postData);
-            }
-            catch (e) {
-                return reject(new Error(`The API request failed: ${e.message}`, e));
-            }
-
-            if (!response.success || !response.model.clientToken) {
-                return reject(new Error('An unexpected response was received from the Pushed API.'));
-            }
-
-            localStorage.setItem(config.localStorageKeys.token, response.model.clientToken);
-
-            resolve(response.model.clientToken);
+            const clientToken = await this.register(subscription);
+            resolve(clientToken);
         });
     },
 
@@ -132,13 +97,40 @@ var Pushed = {
             const localStorage = self.localStorage;
 
             if (!localStorage) {
-                return reject(new Error('Local storage is not supported by this browser.'));
+                return reject(new Error('Local storage is not supported'));
             }
 
+            let registration;
+
+            try {
+                if (navigator.serviceWorker) {
+                    registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
+                } else if (self.registration) {
+                    registration = self.registration;
+                }
+            }
+            catch (e) {
+                return reject(new Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e));
+            }
+
+            const subscription = await registration.pushManager.getSubscription();
             const clientToken = localStorage.getItem(config.localStorageKeys.token);
 
+            if (!subscription && !clientToken) {
+                return reject(new Error(`Have not subscription`));
+            }
+ 
             if (!clientToken) {
-                return reject(new Error('The device is not registered to receive push notifications.'));
+                const clientToken = await this.updateRegistration();
+                return resolve(clientToken);
+            }
+
+            const tokenTimestamp = this.getSavedTokenTimestamp();
+            const currentTime = this.getCurrentUnixTime();
+            const tokenLifetime = 24 * 60 * 60;
+
+            if (tokenTimestamp && currentTime - tokenTimestamp < tokenLifetime) {
+                return resolve(clientToken);
             }
 
             const postData = { 
@@ -155,11 +147,86 @@ var Pushed = {
                 return reject(new Error(`The API request failed: ${e.message}`, e));
             }
 
-            if (!response.success || !response.model.clientToken || response.model.clientToken != clientToken) {
+            if (!response.success) {
+                clientToken = await this.updateRegistration();
+            }
+
+            const unixDateTime = this.getCurrentUnixTime();
+            localStorage.setItem(config.localStorageKeys.tokenTimestamp, unixDateTime);
+
+            return resolve(clientToken);
+        });
+    },
+
+    updateRegistration() {
+        return new Promise(async (resolve, reject) => {
+            let registration;
+            
+            try {
+                if (navigator.serviceWorker) {
+                    registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
+                } else if (self.registration) {
+                    registration = self.registration;
+                }
+            }
+            catch (e) {
+                return reject(new Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e));
+            }
+
+            let oldSubscription = await registration.pushManager.getSubscription();
+
+            if (oldSubscription){
+                await oldSubscription.unsubscribe();
+            }
+
+            const publicKey = config.vapidDetails.publicKey;
+            const newSubscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(publicKey) });
+
+            const clientToken = await this.register(newSubscription);
+
+            return resolve(clientToken);
+        });
+    },
+
+    register(subscription) {
+        return new Promise(async (resolve, reject) => {
+            debugger;
+            const token = localStorage.getItem(config.localStorageKeys.token);
+            const jsonSubscription = JSON.parse(JSON.stringify(subscription));
+
+            const auth = jsonSubscription.keys.auth;
+            const p256dhKey = jsonSubscription.keys.p256dh;
+            const webApiEndpoint = jsonSubscription.endpoint;
+
+            if (!p256dhKey || !auth || !webApiEndpoint) {
+                return reject(new Error('The push subscription is missing a required field.'));
+            }
+
+            const postData = {
+                sdkVersion: config.version,
+                auth: auth,
+                webApiEndpoint: webApiEndpoint,
+                P256dhKey: p256dhKey,
+                hostname: self.location.hostname,
+                clientToken: token
+            };
+
+            let response;
+
+            try {
+                response = await api.post(config.api.registerEndpoint, postData);
+            }
+            catch (e) {
+                return reject(new Error(`The API request failed: ${e.message}`, e));
+            }
+
+            if (!response.success || !response.model.clientToken) {
                 return reject(new Error('An unexpected response was received from the Pushed API.'));
             }
 
-            resolve();
+            localStorage.setItem(config.localStorageKeys.token, response.model.clientToken);
+
+            resolve(response.model.clientToken);
         });
     },
 
@@ -181,12 +248,21 @@ var Pushed = {
             localStorage.setItem(config.localStorageKeys.apiEndpoint, endpoint);
         }
     },
+
+    getSavedTokenTimestamp() {
+        const tokenTimestamp = localStorage.getItem(config.localStorageKeys.tokenTimestamp);
+        return tokenTimestamp ? parseInt(tokenTimestamp, 10) : null;
+    },
+
+    getCurrentUnixTime() {
+        return Math.floor(Date.now() / 1000);
+    }
 }
 
 export default Pushed;
 
 try {
-    module.exports = Pushy;
+    module.exports = Pushed;
 }
 catch (err) {
     //ignore

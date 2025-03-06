@@ -11,6 +11,7 @@ const config = {
     },
     localStorageKeys: {
         token: 'clientToken',
+        tokenTimestamp: 'tokenTimestamp',
         apiEndpoint: 'pushedApiEndpoint',
         proxyApiEndpoint: 'proxyApiEndpoint',
         environment: 'pushedEnvironment',
