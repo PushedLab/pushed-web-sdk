@@ -50,9 +50,7 @@ var Pushed = {
         }
         else {
             try {
-                await this.validateClientToken();
-                const clientToken = localStorage.getItem(config.localStorageKeys.token);
-                return clientToken;
+                return await this.validateSubscription();
             }
             catch (e) {
                 // ignore
@@ -122,7 +120,7 @@ var Pushed = {
 
         const tokenTimestamp = this.getSavedTokenTimestamp();
         const currentTime = this.getCurrentUnixTime();
-        const tokenLifetime = 24 * 60 * 60;
+        const tokenLifetime = 24 * 60 * 60; //24 hours
 
         if (tokenTimestamp && currentTime - tokenTimestamp < tokenLifetime) {
             return clientToken;
