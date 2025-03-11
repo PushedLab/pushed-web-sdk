@@ -1,6 +1,6 @@
 {
   "name": "pushed-web-sdk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "sdk for web pushes from pushed",
   "main": "src/lib/pushed.js",
   "types": "src/lib/pushed.d.ts",
@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/PushedLab/pushed-web-sdk#readme",
   "devDependencies": {
-    "webpack": "^5.96.1",
+    "webpack": "^5.98.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
