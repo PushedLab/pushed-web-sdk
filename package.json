@@ -18,7 +18,7 @@
   },
   "homepage": "https://github.com/PushedLab/pushed-web-sdk#readme",
   "devDependencies": {
-    "webpack": "^5.96.1",
+    "webpack": "^5.98.0",
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
