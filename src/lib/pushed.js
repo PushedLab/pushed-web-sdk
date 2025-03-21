@@ -3,119 +3,51 @@ import config from '../config';
 import Base64 from '../util/base64';
 
 var Pushed = {
-    async registerWebPushes() {
-        if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
-            if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-                throw new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.');
-            }
-            else {
-                throw new Error('Web push is not supported');
-            }
+    async requestNotificationPermission() {
+        if (Notification.permission === 'default') {
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
         }
-
-        const localStorage = self.localStorage;
-
-        if (!localStorage) {
-            throw new Error('Local storage is not supported');
-        }
-
-        let registration;
-
-        try {
-            if (navigator.serviceWorker) {
-                registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
-            } else if (self.registration) {
-                registration = self.registration;
-            }
-        }
-        catch (e) {
-            throw Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e);
-        }
-
-        if (navigator.serviceWorker) {
-            await navigator.serviceWorker.ready;
-        }
-
-        let subscription = await registration.pushManager.getSubscription();
-
-        if (!subscription) {
-            const publicKey = config.vapidDetails.publicKey;
-
-            try {
-                subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(publicKey) });
-            }
-            catch (e) {
-                throw Error(`Failed to subscribe the device: ${e.message}`, e);
-            }
-        }
-        else {
-            try {
-                return await this.validateSubscription();
-            }
-            catch (e) {
-                // ignore
-            }
-        }
-
-        const clientToken = await this.register(subscription);
-        return clientToken;
+        return Notification.permission === 'granted';
     },
 
-    async setNotificationListener(handler) {
-        if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
-            return console.error('Web push is not supported by this browser.');
+    async registerWebPushes() {
+        this.isSupportWebPush();
+
+        var isPermissionGrnated = await this.requestNotificationPermission();
+
+        if (!isPermissionGrnated) {
+            throw new Error(`Request permissions was denied`);
         }
 
-        if (navigator.serviceWorker) {
-            await navigator.serviceWorker.ready;
+        const registration = await this.getRegistration();
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (!subscription) {
+            return await this.register();
         }
 
-        if (!navigator.serviceWorker) {
-            throw new Error('Service Worker not found');
-        }
-
-        navigator.serviceWorker.addEventListener('message', function (event) {
-            if (!event.data && event.detail) {
-                event.data = event.detail;
-            }
-
-            if (event.data && event.data._pushed) {
-                handler(event.data);
-            }
-        });
+        return await this.validateSubscription();
     },
 
     async validateSubscription() {
-        this.attemptedValidation = true;
+        this.isSupportWebPush();
 
-        const localStorage = self.localStorage;
-
-        if (!localStorage) {
-            throw new Error('Local storage is not supported');
+        const permission = Notification.permission;
+        if (permission !== "granted") {
+            throw new Error(`Request permissions was denied or not requested`);
         }
 
-        let registration;
-
-        try {
-            if (navigator.serviceWorker) {
-                registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
-            } else if (self.registration) {
-                registration = self.registration;
-            }
-        }
-        catch (e) {
-            throw new Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e);
-        }
-
+        const registration = await this.getRegistration();
         const subscription = await registration.pushManager.getSubscription();
-        let clientToken = localStorage.getItem(config.localStorageKeys.token);
-
-        if (!subscription && !clientToken) {
-            throw new Error(`Have not subscription`);
-        }
+        const clientToken = localStorage.getItem(config.localStorageKeys.token);
 
         if (!clientToken) {
-            return await this.updateRegistration();
+            if (subscription){
+                await subscription.unsubscribe();
+            }
+
+            return await this.register();
         }
 
         const tokenTimestamp = this.getSavedTokenTimestamp();
@@ -126,38 +58,17 @@ var Pushed = {
             return clientToken;
         }
 
-        return await this.updateRegistration();
+        if (subscription){
+            await subscription.unsubscribe();
+        }
+
+        return await this.register();
     },
 
-    async updateRegistration() {
-        let registration;
+    async register() {
+        const registration = await this.getRegistration();
+        const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(config.vapidDetails.publicKey) });
 
-        try {
-            if (navigator.serviceWorker) {
-                registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
-            } else if (self.registration) {
-                registration = self.registration;
-            }
-        }
-        catch (e) {
-            throw new Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e);
-        }
-
-        let oldSubscription = await registration.pushManager.getSubscription();
-
-        if (oldSubscription) {
-            await oldSubscription.unsubscribe();
-        }
-
-        const publicKey = config.vapidDetails.publicKey;
-        const newSubscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(publicKey) });
-
-        const clientToken = await this.register(newSubscription);
-
-        return clientToken;
-    },
-
-    async register(subscription) {
         const token = localStorage.getItem(config.localStorageKeys.token);
         const jsonSubscription = JSON.parse(JSON.stringify(subscription));
 
@@ -201,6 +112,30 @@ var Pushed = {
         return responseClientToken;
     },
 
+    async setNotificationListener(handler) {
+        if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
+            return console.error('Web push is not supported by this browser.');
+        }
+
+        if (navigator.serviceWorker) {
+            await navigator.serviceWorker.ready;
+        }
+
+        if (!navigator.serviceWorker) {
+            throw new Error('Service Worker not found');
+        }
+
+        navigator.serviceWorker.addEventListener('message', function (event) {
+            if (!event.data && event.detail) {
+                event.data = event.detail;
+            }
+
+            if (event.data && event.data._pushed) {
+                handler(event.data);
+            }
+        });
+    },
+
     setApiEndpoint(endpoint) {
         if (!endpoint || typeof endpoint !== 'string') {
             return;
@@ -227,6 +162,44 @@ var Pushed = {
 
     getCurrentUnixTime() {
         return Math.floor(Date.now() / 1000);
+    },
+
+    async getRegistration() {
+        let registration;
+
+        try {
+            if (navigator.serviceWorker) {
+                registration = await navigator.serviceWorker.register(`/${config.serviceWorker.fileName}`);
+            } else if (self.registration) {
+                registration = self.registration;
+            }
+        }
+        catch (e) {
+            throw Error(`Failed to load '${self.location.origin}/${config.serviceWorker.fileName}': ${e.message}`, e);
+        }
+
+        if (navigator.serviceWorker) {
+            await navigator.serviceWorker.ready;
+        }
+
+        return registration;
+    },
+
+    isSupportWebPush() {
+        if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
+            if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+                throw new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.');
+            }
+            else {
+                throw new Error('Web push is not supported');
+            }
+        }
+
+        const localStorage = self.localStorage;
+
+        if (!localStorage) {
+            throw new Error('Local storage is not supported');
+        }
     }
 }
 
