@@ -14,10 +14,10 @@ var Pushed = {
     async registerWebPushes() {
         this.isSupportWebPush();
 
-        var isPermissionGrnated = await this.requestNotificationPermission();
+        const isPermissionGranted = await this.requestNotificationPermission();
 
         if (!isPermissionGrnated) {
-            throw new Error(`Request permissions was denied`);
+            throw new Error('Request permissions was denied');
         }
 
         const registration = await this.getRegistration();
@@ -34,8 +34,8 @@ var Pushed = {
         this.isSupportWebPush();
 
         const permission = Notification.permission;
-        if (permission !== "granted") {
-            throw new Error(`Request permissions was denied or not requested`);
+        if (permission !== 'granted') {
+            throw new Error('Request permissions was denied or not requested');
         }
 
         const registration = await this.getRegistration();
