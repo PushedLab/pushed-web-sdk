@@ -16,7 +16,7 @@ var Pushed = {
 
         const isPermissionGranted = await this.requestNotificationPermission();
 
-        if (!isPermissionGrnated) {
+        if (!isPermissionGranted) {
             throw new Error('Request permissions was denied');
         }
 
