@@ -5,12 +5,15 @@ self.addEventListener('push', function (event) {
   const image = data.Image || 'https://multipushed.ru/favicon-32x32.png';
   const title = data.Title || '';
   const body = data.Body || '';
+  const actions = data.Actions || [];
 
   requestPayload = getRequestPayload(data.WebClientToken, data.MessageId);
 
   const options = {
+    actions: actions,
     body: body,
     icon: image,
+    image: 'https://multipushed.ru/favicon-32x32.png',
     badge: image,
     data: {
       url: data.Url
@@ -67,5 +70,5 @@ function setClientInteractionStatus(status, requestPayload) {
   if (status !== 'Show' && status !== 'Click' && status !== 'Close') {
     throw Error('Wrong client interaction status');
   }
-  fetch(`https://api.pushed.dev/v2/web-push/confirm-client-interaction?clientInteraction=${status}`, requestPayload);
+  fetch(`https://api.pushed.ru/v2/web-push/confirm-client-interaction?clientInteraction=${status}`, requestPayload);
 }
