@@ -212,16 +212,23 @@ var Pushed = {
     return registration;
   },
 
-  async unsubscribeAndRemoveToken() {
+  /**
+   * Отписывает Service Worker от пушей
+   */
+  async unsubscribeFromPush() {
     const registration = self.registration;
-    if (!registration) {
-      return;
+    if (registration) {
+      const subscription = await registration.pushManager.getSubscription();
+      if (subscription) {
+        await subscription.unsubscribe();
+      }
     }
-    const subscription = await registration.pushManager.getSubscription();
-    if (subscription) {
-      await subscription.unsubscribe();
-    }
+  },
 
+  /**
+   * Очищает клиентский токен
+   */
+  removeClientToken() {
     localStorage.removeItem(config.localStorageKeys.token);
     localStorage.removeItem(config.localStorageKeys.tokenTimestamp);
   },
