@@ -55,7 +55,7 @@ var Pushed = {
       return clientToken;
     }
 
-    if (subscription){
+    if (subscription) {
       return await subscription.unsubscribe();
     }
 
