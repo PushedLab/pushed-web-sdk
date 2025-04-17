@@ -1,4 +1,4 @@
-declare module 'pushed-web-sdk' {
+declare module '@pushedlab/pushed-web-sdk' {
     export function registerWebPushes(): Promise<string>;
     export function setNotificationListener(callback: (data: any) => void): void;
     export function validateSubscription(): Promise<string>;
