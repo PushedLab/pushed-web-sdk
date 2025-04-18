@@ -3,6 +3,7 @@
 self.addEventListener('push', function (event) {
   const data = event.data.json() || {};
   const image = data.Image || 'https://multipushed.ru/favicon-32x32.png';
+  const placeholderImage = data.PlaceholderImage || '';
   const title = data.Title || '';
   const body = data.Body || '';
   const actions = data.Actions || [];
@@ -13,7 +14,7 @@ self.addEventListener('push', function (event) {
     actions: actions,
     body: body,
     icon: image,
-    image: 'https://multipushed.ru/favicon-32x32.png',
+    image: placeholderImage,
     badge: image,
     data: {
       url: data.Url
