@@ -1,6 +1,6 @@
 {
   "name": "@pushedlab/pushed-web-sdk",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "sdk for web pushes from pushed",
   "main": "src/lib/pushed.js",
   "types": "src/lib/pushed.d.ts",
