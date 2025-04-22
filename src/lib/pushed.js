@@ -18,11 +18,11 @@ var Pushed = {
     const isPermissionGranted = await this.requestNotificationPermission();
 
     if (!isPermissionGranted) {
-      this.setNotificationPermissionState('Denied', token);
+      this.setNotificationPermissionState(false, token);
       throw new Error('Request permissions was denied');
     }
 
-    this.setNotificationPermissionState('Granted', token);
+    this.setNotificationPermissionState(false, token);
     const registration = await this.getRegistration();
     const subscription = await registration.pushManager.getSubscription();
 
@@ -39,11 +39,11 @@ var Pushed = {
 
     const permission = Notification.permission;
     if (permission !== 'granted') {
-      this.setNotificationPermissionState('Denied', token);
+      this.setNotificationPermissionState(false, token);
       throw new Error('Request permissions was denied or not requested');
     }
 
-    this.setNotificationPermissionState('Granted', token);
+    this.setNotificationPermissionState(true, token);
     const registration = await this.getRegistration();
     const subscription = await registration.pushManager.getSubscription();
     const clientToken = localStorage.getItem(config.localStorageKeys.token);
@@ -74,7 +74,7 @@ var Pushed = {
     const webApiEndpoint = jsonSubscription.endpoint;
 
     if (!p256dhKey || !auth || !webApiEndpoint) {
-      throw new Error('The push subscription is missing a required field.');
+      throw Error('The push subscription is missing a required field.');
     }
 
     const postData = {
@@ -83,7 +83,8 @@ var Pushed = {
       webApiEndpoint: webApiEndpoint,
       P256dhKey: p256dhKey,
       hostname: self.location.hostname,
-      clientToken: token
+      clientToken: token,
+      deviceInfo: this.getDeviceInfo()
     };
 
     let response;
@@ -93,11 +94,11 @@ var Pushed = {
       response = await api.post(config.api.registerEndpoint, postData);
     }
     catch (e) {
-      throw new Error(`The API request failed: ${e.message}`, e);
+      throw Error(`The API request failed: ${e.message}`, e);
     }
 
     if (!response.success || !response.model.clientToken) {
-      throw new Error('An unexpected response was received from the Pushed API.');
+      throw Error('An unexpected response was received from the Pushed API.');
     }
 
     responseClientToken = response.model.clientToken;
@@ -113,7 +114,11 @@ var Pushed = {
     const token = localStorage.getItem(config.localStorageKeys.token);
 
     if (!token) {
-      const newToken = await api.post(config.api.generateTokenEndpoint, {});
+      const newToken = await api.post(config.api.generateTokenEndpoint, {
+        sdkVersion: config.version,
+        hostname: self.location.hostname,
+        deviceInfo: this.getDeviceInfo()
+      });
       const tokenValue = newToken.model.clientToken;
       localStorage.setItem(config.localStorageKeys.token, tokenValue);
 
@@ -149,18 +154,12 @@ var Pushed = {
     });
   },
 
-  setNotificationPermissionState(state, clientToken) {
-    if (state !== 'Granted' && state !== 'Denied') {
-      throw Error('Wrong notification permission state');
-    }
+  setNotificationPermissionState(isGranted, clientToken) {
     if (!clientToken) {
       throw Error('Client token is null or empty');
     }
-    const data = {
-      ClientToken: clientToken,
-      NotificationPermissionState: state
-    };
-    api.post(config.api.setNotificationPermissionStateEndpoint, data);
+
+    api.post(`${config.api.setNotificationPermissionStateEndpoint}?clientToken=${clientToken}&isGranted=${isGranted}`, {});
   },
 
   setApiEndpoint(endpoint) {
@@ -189,6 +188,14 @@ var Pushed = {
 
   getCurrentUnixTime() {
     return Math.floor(Date.now() / 1000);
+  },
+
+  getDeviceInfo() {
+    return {
+      browser: self.navigator.userAgentData?.brands[0]?.brand || '',
+      browserVersion: self.navigator.userAgentData?.brands[0]?.version || '',
+      operatingSystem: self.navigator.userAgentData?.platform || ''
+    };
   },
 
   async getRegistration() {
