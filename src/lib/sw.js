@@ -1,14 +1,23 @@
+const config = {
+  version: '1.0.11',
+  apiUrl: 'https://api.pushed.ru'
+};
+
 let requestPayload = null;
 
 self.addEventListener('push', function (event) {
   const data = event.data.json() || {};
+  requestPayload = getRequestPayload(data.WebClientToken, data.MessageId);
+
+  // подтверждаем доставку пуша до клиента
+  requestPayload && confirmDelivery();
+
   const image = data.Image || 'https://multipushed.ru/favicon-32x32.png';
   const placeholderImage = data.PlaceholderImage || '';
   const title = data.Title || '';
   const body = data.Body || '';
+  // кнопки действий. макс. 2 шт.
   const actions = data.Actions || [];
-
-  requestPayload = getRequestPayload(data.WebClientToken, data.MessageId);
 
   const options = {
     actions: actions,
@@ -71,5 +80,9 @@ function setClientInteractionStatus(status, requestPayload) {
   if (status !== 'Show' && status !== 'Click' && status !== 'Close') {
     throw Error('Wrong client interaction status');
   }
-  fetch(`https://api.pushed.ru/v2/web-push/confirm-client-interaction?clientInteraction=${status}`, requestPayload);
+  fetch(`${config.apiUrl}/v2/web-push/confirm-client-interaction?clientInteraction=${status}`, requestPayload);
+}
+
+function confirmDelivery() {
+  fetch(`${config.apiUrl}/v2/web-push/confirm`, requestPayload);
 }
