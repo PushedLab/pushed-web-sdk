@@ -1,5 +1,5 @@
 const config = {
-  version: '1.0.12',
+  version: '1.0.13',
   apiUrl: 'https://api.pushed.ru'
 };
 
