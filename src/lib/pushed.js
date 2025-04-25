@@ -3,6 +3,32 @@ import config from '../config';
 import Base64 from '../util/base64';
 
 var Pushed = {
+
+  async setClientInfo(clientToken) {
+    const currentClientInfo = {
+      clientToken: clientToken,
+      isPermissionGranted: Notification.permission === 'granted',
+      sdkVersion: config.version,
+      deviceInfo: this.getDeviceInfo()
+    };
+
+    const currentClientInfoString = JSON.stringify(currentClientInfo);
+    const storedClientInfo = localStorage.getItem(config.localStorageKeys.clientInfo);
+
+    if (storedClientInfo) {
+      if (currentClientInfoString !== storedClientInfo) {
+        await this.sendClientInfo(currentClientInfoString);
+      }
+    } else {
+      await this.sendClientInfo(currentClientInfoString);
+    }
+  },
+
+  async sendClientInfo(clientInfo) {
+    await api.post(config.api.setClientInfoEndpoint, JSON.parse(clientInfo));
+    localStorage.setItem(config.localStorageKeys.clientInfo, clientInfo);
+  },
+
   async requestNotificationPermission() {
     if (Notification.permission === 'default') {
       const permission = await Notification.requestPermission();
@@ -16,13 +42,12 @@ var Pushed = {
     const token = await this.getTokenIfNotExist();
 
     const isPermissionGranted = await this.requestNotificationPermission();
+    await this.setClientInfo(token);
 
     if (!isPermissionGranted) {
-      this.setNotificationPermissionState(false, token);
-      throw new Error('Request permissions was denied');
+      throw Error('Request permissions was denied');
     }
 
-    this.setNotificationPermissionState(false, token);
     const registration = await this.getRegistration();
     const subscription = await registration.pushManager.getSubscription();
 
@@ -37,13 +62,13 @@ var Pushed = {
     this.isSupportWebPush();
     const token = await this.getTokenIfNotExist();
 
+    await this.setClientInfo(token);
     const permission = Notification.permission;
+
     if (permission !== 'granted') {
-      this.setNotificationPermissionState(false, token);
-      throw new Error('Request permissions was denied or not requested');
+      throw Error('Request permissions was denied or not requested');
     }
 
-    this.setNotificationPermissionState(true, token);
     const registration = await this.getRegistration();
     const subscription = await registration.pushManager.getSubscription();
     const clientToken = localStorage.getItem(config.localStorageKeys.token);
@@ -56,7 +81,7 @@ var Pushed = {
     }
 
     if (subscription) {
-      return await subscription.unsubscribe();
+      await subscription.unsubscribe();
     }
 
     return await this.register();
@@ -107,6 +132,8 @@ var Pushed = {
     const unixDateTime = this.getCurrentUnixTime();
     localStorage.setItem(config.localStorageKeys.tokenTimestamp, unixDateTime);
 
+    await this.setClientInfo(responseClientToken);
+
     return responseClientToken;
   },
 
@@ -140,7 +167,7 @@ var Pushed = {
     }
 
     if (!navigator.serviceWorker) {
-      throw new Error('Service Worker not found');
+      throw Error('Service Worker not found');
     }
 
     navigator.serviceWorker.addEventListener('message', function (event) {
@@ -170,7 +197,7 @@ var Pushed = {
     const localStorage = self.localStorage;
 
     if (!localStorage) {
-      throw new Error('Local storage is not supported by this browser.');
+      throw Error('Local storage is not supported by this browser.');
     }
 
     const previousEndpoint = localStorage.getItem(config.localStorageKeys.apiEndpoint);
@@ -243,17 +270,17 @@ var Pushed = {
   isSupportWebPush() {
     if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
       if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
-        throw new Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.');
+        throw Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.');
       }
       else {
-        throw new Error('Web push is not supported');
+        throw Error('Web push is not supported');
       }
     }
 
     const localStorage = self.localStorage;
 
     if (!localStorage) {
-      throw new Error('Local storage is not supported');
+      throw Error('Local storage is not supported');
     }
   }
 }
