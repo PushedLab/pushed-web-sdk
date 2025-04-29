@@ -76,7 +76,7 @@ var Pushed = {
     const tokenTimestamp = this.getSavedTokenTimestamp();
     const currentTime = this.getCurrentUnixTime();
 
-    if (tokenTimestamp && currentTime - tokenTimestamp < config.token.lifetime) {
+    if (tokenTimestamp && currentTime - tokenTimestamp > config.token.lifetime) {
       return clientToken;
     }
 
