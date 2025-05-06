@@ -14,12 +14,12 @@ self.addEventListener('push', function (event) {
   requestPayload && confirmDelivery();
 
   /**
-   * Иконка для пуша
+   * URL иконки для пуша
    * Рекомендуемый размер 64x64px
    */
   const image = data.Image || 'https://multipushed.ru/favicon-32x32.png';
   /**
-   * Заглавная картинка для пуша
+   * URL заглавного изображения для пуша
    * Рекомендуемый размер 320x160px
    */
   const placeholderImage = data.PlaceholderImage || '';
