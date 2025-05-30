@@ -1,5 +1,5 @@
 const config = {
-  version: '2.0.1',
+  version: '2.0.2',
   platform: 'web',
   api: {
     endpoint: 'https://api.pushed.ru',
