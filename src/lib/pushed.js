@@ -218,11 +218,70 @@ var Pushed = {
   },
 
   getDeviceInfo() {
-    return {
-      browser: self.navigator.userAgentData?.brands[0]?.brand || '',
-      browserVersion: self.navigator.userAgentData?.brands[0]?.version || '',
-      operatingSystem: self.navigator.userAgentData?.platform || ''
-    };
+    const nav = self.navigator;
+    const uaString = nav.userAgent;
+    const uaBrands = nav.userAgentData?.brands;
+    const platform = nav.platform;
+
+    const deviceInfo = {
+      browser: '',
+      browserVersion: '',
+      operatingSystem: this.getOSName(platform, nav.maxTouchPoints),
+    }
+
+    // Microsoft Edge, Google Chrome,
+    // Yandex Browser, Opera
+    if (uaBrands) {
+      const brandIndex = this.getBrandIndex(platform, !!self.opr || !!self.yandex);
+      deviceInfo.browser = uaBrands[brandIndex].brand;
+      deviceInfo.browserVersion = uaBrands[brandIndex].version;
+    } else {
+      // Mozilla Firefox
+      if (uaString.includes('Firefox')) {
+        const verIndex = uaString.lastIndexOf('/');
+        const verString = uaString.substring(verIndex + 1);
+        deviceInfo.browser = 'Mozilla Firefox';
+        deviceInfo.browserVersion = verString;
+        // Safari
+      } else if (this.isSafari(nav.vendor, uaString)) {
+        const verIndex = uaString.search('Version') + 8; // Length of 'Version/'
+        deviceInfo.browser = 'Safari';
+        deviceInfo.browserVersion = uaString.substring(verIndex);
+      }
+    }
+
+    return deviceInfo;
+  },
+
+  getOSName(platform, maxTouchPoints) {
+    if (platform.startsWith('Win')) {
+      return 'Windows';
+    }
+    if (platform.startsWith('Mac')) {
+      return maxTouchPoints > 1 ? 'iPad OS' : 'Mac OS';
+    }
+    return platform;
+  },
+
+  getBrandIndex(platform, operaOrYandex) {
+    // MacIntel issue with Google Chrome
+    if (platform.startsWith('Mac')) {
+      return 0;
+    }
+    // Opera, Yandex Browser
+    if (operaOrYandex) {
+      return 2;
+    }
+    // Edge, Chrome
+    return 1;
+  },
+
+  isSafari(vendor, uaString) {
+    return vendor
+      && vendor.indexOf('Apple') > -1
+      && uaString
+      && uaString.indexOf('CriOS') === -1
+      && uaString.indexOf('FxiOS') === -1;
   },
 
   async getRegistration() {
