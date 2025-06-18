@@ -1,5 +1,5 @@
 const config = {
-  version: '2.0.2',
+  version: '2.0.3',
   platform: 'web',
   api: {
     endpoint: 'https://api.pushed.ru',
@@ -25,7 +25,7 @@ const config = {
     fileName: 'sw.js'
   },
   token: {
-    lifetime: 24 * 60 * 60 // 24 hours
+    lifetime: 24 * 60 * 60 * 1000 // 24 hours in ms
   },
   logic: {
     deviceValidationDelay: 5000
