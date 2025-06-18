@@ -232,7 +232,7 @@ var Pushed = {
     // Microsoft Edge, Google Chrome,
     // Yandex Browser, Opera
     if (uaBrands) {
-      const brandIndex = this.getBrandIndex(platform, !!self.opr || !!self.yandex);
+      const brandIndex = this.getBrandIndex(!!self.opr || !!self.yandex);
       deviceInfo.browser = uaBrands[brandIndex].brand;
       deviceInfo.browserVersion = uaBrands[brandIndex].version;
     } else {
@@ -263,17 +263,13 @@ var Pushed = {
     return platform;
   },
 
-  getBrandIndex(platform, operaOrYandex) {
-    // MacIntel issue with Google Chrome
-    if (platform.startsWith('Mac')) {
-      return 0;
-    }
+  getBrandIndex(operaOrYandex) {
     // Opera, Yandex Browser
     if (operaOrYandex) {
       return 2;
     }
     // Edge, Chrome
-    return 1;
+    return 0;
   },
 
   isSafari(vendor, uaString) {
