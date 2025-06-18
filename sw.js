@@ -1,5 +1,5 @@
 ﻿const config = {
-  version: '2.0.2',
+  version: '2.0.3',
   apiUrl: 'https://api.pushed.ru'
 };
 
@@ -51,6 +51,7 @@ self.addEventListener('push', function (event) {
     actions: actions,
     body: body,
     icon: image,
+    tag: data.MessageId || '',
     image: placeholderImage,
     badge: image,
     silent: silent,
@@ -87,7 +88,10 @@ self.addEventListener('notificationclick', function (event) {
   let url;
   const action = options.actions.find(x => x.action === event.action);
   url = action ? action.url : event.notification.data.url;
-  url && event.waitUntil(clients.openWindow(url));
+  url && event.waitUntil(Promise.all([
+    clients.openWindow(url),
+    closeNotification(event.notification.tag)])
+  );
 });
 
 self.addEventListener('install', event => {
@@ -126,4 +130,12 @@ function shouldShowNotification(data) {
     return false;
   }
   return (data.Title && data.Body) || !data.Payload;
+}
+
+async function closeNotification(tag) {
+  const notifications = await self.registration.getNotifications();
+  const currentNotification = notifications.find(x => x.tag === tag);
+  if (currentNotification) {
+    currentNotification.close();
+  }
 }
