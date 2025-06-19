@@ -1,5 +1,5 @@
 ﻿const config = {
-  version: '2.0.4',
+  version: '2.0.5',
   apiUrl: 'https://api.pushed.ru'
 };
 
@@ -82,16 +82,16 @@ self.addEventListener('push', function (event) {
  * При клике на пуш или заглавную картинку, загружается страница по адресу в data.Url (если задан)
  * При клике на кнопку действия, загружается страница по адресу в ActionUrl этой кнопки (если задан)
  */
-self.addEventListener('notificationclick', function (event) {
+self.addEventListener('notificationclick', async function (event) {
   requestPayload && setClientInteractionStatus('Click', requestPayload);
 
   let url;
+  const notification = event.notification;
   const action = options.actions.find(x => x.action === event.action);
-  url = action ? action.url : event.notification.data.url;
-  url && event.waitUntil(Promise.all([
-    clients.openWindow(url),
-    closeNotification(event.notification.tag)])
-  );
+  url = action ? action.url : notification.data.url;
+  url && event.waitUntil(clients.openWindow(url));
+
+  await closeNotification(notification.tag);
 });
 
 self.addEventListener('install', event => {
@@ -135,7 +135,5 @@ function shouldShowNotification(data) {
 async function closeNotification(tag) {
   const notifications = await self.registration.getNotifications();
   const currentNotification = notifications.find(x => x.tag === tag);
-  if (currentNotification) {
-    currentNotification.close();
-  }
+  currentNotification && currentNotification.close();
 }
