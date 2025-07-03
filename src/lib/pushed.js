@@ -37,9 +37,9 @@ var Pushed = {
     return Notification.permission === 'granted';
   },
 
-  async registerWebPushes() {
+  async registerWebPushes(userConfig = null) {
     this.isSupportWebPush();
-    const token = await this.getTokenIfNotExist();
+    const token = await this.getTokenIfNotExist(userConfig);
 
     const isPermissionGranted = await this.requestNotificationPermission();
     await this.setClientInfo(token);
@@ -55,12 +55,12 @@ var Pushed = {
       return await this.register();
     }
 
-    return await this.validateSubscription();
+    return await this.validateSubscription(userConfig);
   },
 
-  async validateSubscription() {
+  async validateSubscription(userConfig = null) {
     this.isSupportWebPush();
-    const token = await this.getTokenIfNotExist();
+    const token = await this.getTokenIfNotExist(userConfig);
 
     await this.setClientInfo(token);
     const permission = Notification.permission;
@@ -84,10 +84,10 @@ var Pushed = {
       await subscription.unsubscribe();
     }
 
-    return await this.register();
+    return await this.register(userConfig);
   },
 
-  async register() {
+  async register(userConfig = null) {
     const registration = await this.getRegistration();
     const subscription = await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: Base64.urlB64ToUint8Array(config.vapidDetails.publicKey) });
 
@@ -109,7 +109,8 @@ var Pushed = {
       P256dhKey: p256dhKey,
       hostname: self.location.hostname,
       clientToken: token,
-      deviceInfo: this.getDeviceInfo()
+      deviceInfo: this.getDeviceInfo(),
+      websiteId: (userConfig && userConfig.websiteId) || null
     };
 
     let response;
@@ -137,14 +138,15 @@ var Pushed = {
     return responseClientToken;
   },
 
-  async getTokenIfNotExist() {
+  async getTokenIfNotExist(userConfig = null) {
     const token = localStorage.getItem(config.localStorageKeys.token);
 
     if (!token) {
       const newToken = await api.post(config.api.generateTokenEndpoint, {
         sdkVersion: config.version,
         hostname: self.location.hostname,
-        deviceInfo: this.getDeviceInfo()
+        deviceInfo: this.getDeviceInfo(),
+        websiteId: (userConfig && userConfig.websiteId) || null
       });
       const tokenValue = newToken.model.clientToken;
       localStorage.setItem(config.localStorageKeys.token, tokenValue);
