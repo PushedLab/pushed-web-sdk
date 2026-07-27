@@ -66,7 +66,10 @@ var Pushed = {
     const permission = Notification.permission;
 
     if (permission !== 'granted') {
-      throw Error('Request permissions was denied or not requested');
+      const permGranted = await this.requestNotificationPermission();
+      if (!permGranted) {
+        throw Error('Request permissions was denied or not requested');
+      }
     }
 
     const registration = await this.getRegistration();
