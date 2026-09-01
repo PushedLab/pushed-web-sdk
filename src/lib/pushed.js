@@ -1,6 +1,7 @@
 import api from '../util/api';
 import config from '../config';
 import Base64 from '../util/base64';
+import { detectBrowser, detectOs, detectVersion } from '@pushedlab/telemetry';
 
 var Pushed = {
 
@@ -163,7 +164,7 @@ var Pushed = {
   },
 
   async setNotificationListener(handler) {
-    if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
+    if (!this.isWebPushSupported()) {
       return console.error('Web push is not supported by this browser.');
     }
 
@@ -223,66 +224,11 @@ var Pushed = {
   },
 
   getDeviceInfo() {
-    const nav = self.navigator;
-    const uaString = nav.userAgent;
-    const uaBrands = nav.userAgentData?.brands;
-    const platform = nav.platform;
-
-    const deviceInfo = {
-      browser: '',
-      browserVersion: '',
-      operatingSystem: this.getOSName(platform, nav.maxTouchPoints),
-    }
-
-    // Microsoft Edge, Google Chrome,
-    // Yandex Browser, Opera
-    if (uaBrands) {
-      const brandIndex = this.getBrandIndex(!!self.opr || !!self.yandex);
-      deviceInfo.browser = uaBrands[brandIndex].brand;
-      deviceInfo.browserVersion = uaBrands[brandIndex].version;
-    } else {
-      // Mozilla Firefox
-      if (uaString.includes('Firefox')) {
-        const verIndex = uaString.lastIndexOf('/');
-        const verString = uaString.substring(verIndex + 1);
-        deviceInfo.browser = 'Mozilla Firefox';
-        deviceInfo.browserVersion = verString;
-        // Safari
-      } else if (this.isSafari(nav.vendor, uaString)) {
-        const verIndex = uaString.search('Version') + 8; // Length of 'Version/'
-        deviceInfo.browser = 'Safari';
-        deviceInfo.browserVersion = uaString.substring(verIndex);
-      }
-    }
-
-    return deviceInfo;
-  },
-
-  getOSName(platform, maxTouchPoints) {
-    if (platform.startsWith('Win')) {
-      return 'Windows';
-    }
-    if (platform.startsWith('Mac')) {
-      return maxTouchPoints > 1 ? 'iPad OS' : 'Mac OS';
-    }
-    return platform;
-  },
-
-  getBrandIndex(operaOrYandex) {
-    // Opera, Yandex Browser
-    if (operaOrYandex) {
-      return 2;
-    }
-    // Edge, Chrome
-    return 0;
-  },
-
-  isSafari(vendor, uaString) {
-    return vendor
-      && vendor.indexOf('Apple') > -1
-      && uaString
-      && uaString.indexOf('CriOS') === -1
-      && uaString.indexOf('FxiOS') === -1;
+    return {
+      browser: detectBrowser() || '',
+      browserVersion: detectVersion() || '',
+      operatingSystem: detectOs() || '',
+    };
   },
 
   async getRegistration() {
@@ -327,19 +273,19 @@ var Pushed = {
     localStorage.removeItem(config.localStorageKeys.tokenTimestamp);
   },
 
+  isWebPushSupported() {
+    return 'PushManager' in self && ('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined');
+  },
+
   isSupportWebPush() {
-    if (!('PushManager' in self) || !('serviceWorker' in navigator || typeof ServiceWorkerRegistration !== 'undefined')) {
-      if (/iPad|iPhone|iPod/.test(navigator.platform) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+    if (!this.isWebPushSupported()) {
+      if (['ios', 'ipados'].includes(detectOs())) {
         throw Error('For Web Push on iOS 16.4+, you will first need to click the "Share" button -> "Add to Home Screen" before you can sign up for push notifications.');
       }
-      else {
-        throw Error('Web push is not supported');
-      }
+      throw Error('Web push is not supported');
     }
 
-    const localStorage = self.localStorage;
-
-    if (!localStorage) {
+    if (!self.localStorage) {
       throw Error('Local storage is not supported');
     }
   }
