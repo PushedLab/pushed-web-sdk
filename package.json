@@ -1,6 +1,6 @@
 {
   "name": "@pushedlab/pushed-web-sdk",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "sdk for web pushes from pushed",
   "main": "src/lib/pushed.js",
   "types": "src/lib/pushed.d.ts",
@@ -22,6 +22,7 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
+    "@pushedlab/telemetry": "1.1.0",
     "promise-polyfill": "^8.3.0",
     "whatwg-fetch": "^3.6.20"
   },
